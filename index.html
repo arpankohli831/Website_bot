@@ -1,43 +1,226 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Just2Earn Task</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 50px;
-            background: #f4f4f9;
-        }
-        h1 {
-            color: #4CAF50;
-        }
-        p {
-            font-size: 18px;
-            color: #333;
-        }
-        .button {
-            display: inline-block;
-            margin-top: 30px;
-            padding: 15px 25px;
-            font-size: 18px;
-            color: #fff;
-            background: #4CAF50;
-            border: none;
-            border-radius: 8px;
-            text-decoration: none;
-        }
-        .button:hover {
-            background: #45a049;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hacker Music System</title>
+
+<style>
+body{
+  margin:0;
+  background:black;
+  color:#00ffff;
+  font-family:monospace;
+  overflow:hidden;
+}
+
+/* MATRIX */
+canvas{
+  position:fixed;
+  top:0;
+  left:0;
+  z-index:-1;
+}
+
+/* UI BOX */
+.container{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  border:2px solid cyan;
+  padding:25px;
+  border-radius:15px;
+  text-align:center;
+  box-shadow:0 0 10px cyan;
+  backdrop-filter:blur(10px);
+}
+
+/* BUTTON */
+button{
+  margin:5px;
+  padding:10px 15px;
+  border:none;
+  background:cyan;
+  color:black;
+  border-radius:8px;
+  font-weight:bold;
+}
+
+/* EQUALIZER */
+.bars{
+  display:flex;
+  justify-content:center;
+  margin-top:15px;
+}
+
+.bar{
+  width:5px;
+  height:20px;
+  background:cyan;
+  margin:2px;
+}
+</style>
 </head>
+
 <body>
-    <h1>Welcome to Just2Earn Task</h1>
-    <p>Thank you for clicking the short link!<br>
-    Please return to Telegram to get your credit automatically.</p>
-    <a href="https://t.me/ARPAN_ID_BOT"" class="button">Go Back to Bot</a>
+
+<canvas id="matrix"></canvas>
+
+<div class="container">
+  <h3 id="songName">⚡ Select Song ⚡</h3>
+
+  <button onclick="playSong(0)">🎧 Cyberpunk</button>
+  <button onclick="playSong(1)">💀 Dark</button>
+  <button onclick="playSong(2)">⚡ Glitch</button><br>
+
+  <button onclick="prevSong()">⏮</button>
+  <button onclick="togglePause()" id="pauseBtn">▶</button>
+  <button onclick="nextSong()">⏭</button>
+
+  <br><br>
+  🔊 <input type="range" min="0" max="1" step="0.01" onchange="setVolume(this.value)">
+
+  <div class="bars" id="bars"></div>
+</div>
+
+<audio id="bgMusic" loop></audio>
+
+<script>
+/* SONGS */
+const songs=[
+ {name:"Cyberpunk Beat",url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"},
+ {name:"Dark Ambient",url:"https://cdn.pixabay.com/download/audio/2022/10/25/audio_9466c9b8cb.mp3"},
+ {name:"Glitch Mode",url:"https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8a0c2e3c9.mp3"}
+];
+
+let index=0, started=false, playing=false;
+
+const audio=document.getElementById("bgMusic");
+
+/* PLAY */
+function playSong(i){
+  index=i;
+  audio.src=songs[index].url;
+  audio.play().then(()=>{
+    playing=true;
+    document.getElementById("songName").innerText=songs[index].name;
+
+    if(!started){
+      setupVisualizer();
+      started=true;
+    }
+
+    document.getElementById("pauseBtn").innerText="⏸";
+  }).catch(()=>alert("Tap again 🔊"));
+}
+
+/* CONTROLS */
+function togglePause(){
+  if(!playing){
+    audio.play();
+    playing=true;
+    pauseBtn.innerText="⏸";
+  }else{
+    audio.pause();
+    playing=false;
+    pauseBtn.innerText="▶";
+  }
+}
+
+function nextSong(){
+  index=(index+1)%songs.length;
+  playSong(index);
+}
+
+function prevSong(){
+  index=(index-1+songs.length)%songs.length;
+  playSong(index);
+}
+
+function setVolume(v){
+  audio.volume=v;
+}
+
+/* MATRIX */
+const canvas=document.getElementById("matrix");
+const ctx=canvas.getContext("2d");
+canvas.height=innerHeight;
+canvas.width=innerWidth;
+
+let letters="01".split("");
+let fontSize=14;
+let columns=canvas.width/fontSize;
+let drops=[];
+
+for(let x=0;x<columns;x++) drops[x]=1;
+
+function draw(){
+  ctx.fillStyle="rgba(0,0,0,0.05)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  ctx.fillStyle="#0f0";
+  ctx.font=fontSize+"px monospace";
+
+  for(let i=0;i<drops.length;i++){
+    let text=letters[Math.random()*letters.length|0];
+    ctx.fillText(text,i*fontSize,drops[i]*fontSize);
+
+    if(drops[i]*fontSize>canvas.height&&Math.random()>0.975)
+      drops[i]=0;
+
+    drops[i]++;
+  }
+}
+setInterval(draw,33);
+
+/* VISUALIZER */
+let audioCtx, analyser, source, dataArray;
+
+function setupVisualizer(){
+  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  analyser=audioCtx.createAnalyser();
+
+  source=audioCtx.createMediaElementSource(audio);
+  source.connect(analyser);
+  analyser.connect(audioCtx.destination);
+
+  analyser.fftSize=64;
+  dataArray=new Uint8Array(analyser.frequencyBinCount);
+
+  createBars();
+  animate();
+}
+
+function createBars(){
+  const bars=document.getElementById("bars");
+  for(let i=0;i<32;i++){
+    let div=document.createElement("div");
+    div.classList.add("bar");
+    bars.appendChild(div);
+  }
+}
+
+function animate(){
+  requestAnimationFrame(animate);
+
+  analyser.getByteFrequencyData(dataArray);
+
+  const bars=document.querySelectorAll(".bar");
+
+  dataArray.forEach((v,i)=>{
+    if(bars[i]) bars[i].style.height=(v/2)+"px";
+  });
+
+  let avg=dataArray.reduce((a,b)=>a+b)/dataArray.length;
+
+  document.querySelector(".container").style.boxShadow=
+    `0 0 ${10+avg}px cyan,0 0 ${20+avg}px #00ffff`;
+
+  document.querySelector(".container").style.transform=
+    `translate(-50%,-50%) scale(${1+avg/500})`;
+}
+</script>
+
 </body>
 </html>
